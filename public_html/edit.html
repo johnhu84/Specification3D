@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <title>产品编辑-模型</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="baidu-site-verification" content="fsZoTq9h0W" />
+    <link href="css/style.css" rel="stylesheet" type="text/css" />
+    <link href="font/iconfont.css" rel="stylesheet" type="text/css" />
+    <link href="js/jquery-ui-1.11.4.custom/jquery-ui.min.css" rel="stylesheet" type="text/css" />
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #f0f0f0;
+            margin: 0px;
+            overflow: hidden;
+        }
+                        
+        #container > div {
+            float:left;
+            display:none;
+            visibility:hidden;
+        }
+    </style>
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script type="text/javascript" src="js/jquery-ui-1.11.4.custom/jquery-ui.min.js"></script>
+    <script src="js/three.js"></script>
+    <script src="js/OrbitControls.js"></script>
+    <script src="js/EditorControls.js"></script>
+    <script type="text/javascript" src="js/CanvasRenderer.js"></script>
+    <script type="text/javascript" src="js/DescriptionControl.js"></script>
+    <script type="text/javascript" src="js/PrinterControl.js"></script>
+    <script type="text/javascript" src="js/TransformControls.js"></script>
+    <script type="text/javascript" src="js/CollisionControl.js"></script>
+    <script type="text/javascript" src="js/Projector.js"></script>
+    <script type="text/javascript" src="js/ColladaLoader.js"></script>
+    <script src="js/Animation.js"></script>
+    <script src="js/AnimationHandler.js"></script>
+    <script src="js/KeyFrameAnimation.js"></script>
+    <script src="js/WebVR.js"></script>
+    <script src="js/effects/VREffect.js"></script>
+    <script src="js/controls/VRControls.js"></script>
+    <script type="text/javascript" src="js/JSON-js-master/json2.js"></script>
+    <script>
+        if ( WEBVR.isLatestAvailable() === false ) {
+            document.body.appendChild( WEBVR.getMessage() );
+	}
+        
+	function webglAvailable() { 
+            try { 
+                canvas = document.createElement( 'canvas' );
+                return !!( window.WebGLRenderingContext && ( canvas.getContext( 'webgl' ) || 
+                    canvas.getContext( 'experimental-webgl' ) ) );
+            } catch ( e ) { 
+                return false; 
+            } 
+        }	
+
+	var container, printerControl, collisionControl, prevTime, isAnimated = false, animationDirectionForward;
+	var camera, scene, renderer, webgl, _currentVector, vrControls, effect;
+	//array of objects that can be selected by the TransformControl
+        var allObjects = []
+        var nonCollidibleObjs = [];
+        var mesh;
+	var mixer;
+        var clock = new THREE.Clock();
+	var geometry = new THREE.BoxGeometry( 20, 20, 20 );
+        var selectedObject, selectedDescription; 
+        
+        //05/28/16
+        var testObjects = ['objs/00.js', 'objs/01.js', 'objs/02.js', 'objs/03.js', 'objs/04.js', 'objs/05.js', 'objs/06.js', 'objs/07.js', 'objs/08.js',
+            'objs/09.js', 'objs/10.js', 'objs/11.js', 'objs/12.js', 'objs/13.js', 'objs/14.js', 'objs/15.js'];//['objs/chair.js', 'objs/hanger.js', 'objs/clothes.js', 'objs/door.js'];
+        var currentFrame = 0;
+        
+        //isOriginal variable determines which end of the line of the selected description was clicked on
+        var isOriginal;
+        
+        //y position of the floor, description objects will not be able to move below this plane
+        var floorY = -199;
+        
+        var cameraLastPosition, cameraLastRotation, dialog, editDialog;
+        $(document).ready(function() {
+            init();
+            animate();
+            dialog = $( "#add-desc" ).dialog({
+                autoOpen: false,
+                height: 300,
+                width: 350,
+                modal: true,
+                buttons: {
+                    "Create a description": addDescription,
+                    Cancel: function() {
+                        dialog.dialog( "close" );
+                    }
+                },
+                close: function() {
+                    $('#add-desc form input#description').val();
+                    dialog.dialog('close');
+                }
+            });
+            
+            editDialog = $( "#edit-desc" ).dialog({
+                autoOpen: false,
+                height: 300,
+                width: 350,
+                modal: true,
+                buttons: {
+                    "Edit a description": editDescription,
+                    Cancel: function() {
+                        editDialog.dialog( "close" );
+                    },
+                    Move: function() {
+                        transformControl.attach( selectedObject );
+                        controls.enable = false; 
+                        editDialog.dialog("close");
+                    },
+                    Reset: function() {
+                        if (selectedDescription) {
+                            var cameraPosition = new THREE.Vector3((printerControl.object.geometry.boundingBox.max.x * printerControl.object.scale.x) + 80, (printerControl.object.geometry.boundingBox.max.y * printerControl.object.scale.y) + 70, (printerControl.object.geometry.boundingBox.max.z * printerControl.object.scale.z) + 60);//camera.position.clone();
+                            var origin = cameraPosition;
+                            var target = new THREE.Vector3( cameraPosition.x + 110, cameraPosition.y + 90, cameraPosition.z + 70);
+                            selectedDescription.origin.copy(origin.clone());
+                            selectedDescription.target.copy(target.clone());
+                            selectedDescription.reset();
+                            editDialog.dialog("close");
+                        }
+                    }
+                },
+                close: function() {
+                    $('#edit-desc form input#desc').val();
+                    editDialog.dialog('close');
+                }
+            });
+            
+            $('#edit-desc form').keypress(function(e) {
+                if (e.which == 13) {
+                    transformControl.attach( selectedObject );
+                    controls.enable = false; 
+                    editDialog.dialog("close");
+                }
+            });
+            
+            $('input#description').keypress(function(event) {
+                if (event.which == 13) {
+                    event.preventDefault();
+                    addDescription(event);
+                }
+            });
+            
+            $('input#desc').keypress(function(event) {
+                if (event.which == 13) {
+                    event.preventDefault();
+                    editDescription(event);
+                }
+            });
+            
+            $('.add-desc').button().on('click', function() {
+                dialog.dialog('open');
+            });
+            
+            //file input for printer js uploading
+            $('#ptr-up').hide();
+            $('.prt-up').click(function(e) {
+                e.preventDefault();
+                $('#ptr-up').toggle();
+            });
+            
+            $('.save').click(function(e) {
+                e.preventDefault();
+                //e.stopPropagation();
+                $('#ji').html(JSON.stringify(printerControl.descriptions));
+            });
+            
+            //live click handler for when edit description message button is clicked
+            $('.edit-msg').live('click', function(e) {
+                var parent = $(this).parents('p');
+                var ind = $(parent).find('.edit-msg-ind').val();
+                editDialog.dialog('open');
+                $('#edit-desc #desc-id').val(ind);
+                var desc = $('div#desc p:eq(' + ind + ') span:first').html();
+                $('#edit-desc #desc').val(desc);
+            });
+            
+            $('#change-printer').click(function(e) {
+                if (!printerControl.isAnimationEnabled) {
+                    animationDirectionForward = !animationDirectionForward ? true : !animationDirectionForward;
+                    /*if (animationDirectionForward)
+                        printerControl.playForwards();
+                    else
+                        printerControl.playForwards();//Backwards();*/
+                    return false;
+                }
+                animationDirectionForward = !animationDirectionForward ? true : !animationDirectionForward;
+                isAnimated = true;
+                printerControl.currentAnimationState = printerControl.currentAnimationState % 2 == 0 ? 1 : 0;
+                printerControl.makeInvisible();
+            });
+            
+            /*for (var i in testObjects) {
+                printerControl.staticLoad(testObjects[i]);
+            }*/
+            
+            //printerControl.testLoad();
+        });
+
+        function addDescription(event) {
+            event.preventDefault();
+            var description = $('#description').val();
+            var newDescriptionControl = printerControl.addDescription(description);
+            allObjects.push(newDescriptionControl._pivot);
+            allObjects.push(newDescriptionControl._pivot2);
+            allObjects.push(newDescriptionControl.sprite);
+            $('#add-desc form input#description').val('');
+            dialog.dialog('close');
+        }
+        
+        function editDescription(event) {
+            event.preventDefault();
+            var description = $('input#desc').val();
+            var descriptionId = $('#desc-id').val();
+            var descriptionToEdit = printerControl.descriptions[descriptionId];
+            if (descriptionToEdit)
+                var newDescriptionControl = printerControl.editDescription(description, descriptionToEdit, descriptionId);
+            $('#edit-desc form input#desc').val('');
+            editDialog.dialog('close');
+        }
+
+	function init() {
+            container = document.getElementById('container');
+                                
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+            camera.position.z = 1000;
+            scene.add( camera );
+            vrControls = new THREE.VRControls(camera);
+            var geometry = new THREE.Geometry();
+            geometry.vertices.push( new THREE.Vector3(), new THREE.Vector3() );
+
+            var collisionLine = new THREE.Line( geometry, new THREE.LineBasicMaterial( { linewidth: 4 } ) );
+            scene.add( collisionLine );
+
+            collisionControl = new THREE.CollisionControl({camera:camera, display:'info', line:collisionLine, snapBackDistance : 1});
+
+            scene.add( new THREE.AmbientLight( 0xf0f0f0 ) );
+            var light = new THREE.SpotLight( 0xffffff, 1.5 );
+            light.position.set( 0, 1500, 200 );
+            light.castShadow = true;
+            light.shadowCameraNear = 200;
+            light.shadowCameraFar = camera.far;
+            light.shadowCameraFov = 70;
+            light.shadowBias = -0.000222;
+            light.shadowDarkness = 0.25;
+            light.shadowMapWidth = 1024;
+            light.shadowMapHeight = 1024;
+            scene.add( light );
+            spotlight = light;
+
+            var helper = new THREE.GridHelper( 1000, 100 );
+            helper.position.y = floorY;
+            helper.material.opacity = 0.25;
+            helper.material.transparent = true;
+            scene.add( helper );
+
+            var axis = new THREE.AxisHelper();
+            axis.position.set( -500, -500, -500 );
+            scene.add( axis );
+
+            //renderer = new THREE.WebGLRenderer( { antialias: true } );
+            webgl = webglAvailable();
+            if ( webgl ) { 
+                renderer = new THREE.WebGLRenderer({antialias:true}); 
+            } else { 
+                renderer = new THREE.CanvasRenderer(); 
+            }
+            renderer.setClearColor( 0xf0f0f0 );
+            renderer.setSize( container.offsetWidth, container.offsetHeight );
+            if (renderer.shadowMap !== undefined)
+                renderer.shadowMap.enabled = true;
+            container.appendChild( renderer.domElement );
+            printerControl = new THREE.PrinterControl(null, renderer.domElement, {scene: scene, camera: camera, webgl: webgl, collisionControl: collisionControl});
+            effect = new THREE.VREffect(renderer);
+            if ( WEBVR.isAvailable() === true ) {
+        	document.body.appendChild( WEBVR.getButton( effect ) );
+            }
+
+if (navigator.getVRDisplays) {
+        navigator.getVRDisplays().then(function (displays) {
+          if (displays.length > 0) {
+            vrDisplay = displays[0];
+
+            initWebGL(true);
+
+            if (vrDisplay.stageParameters &&
+                vrDisplay.stageParameters.sizeX > 0 &&
+                vrDisplay.stageParameters.sizeZ > 0) {
+              cubeIsland.resize(vrDisplay.stageParameters.sizeX, vrDisplay.stageParameters.sizeZ);
+            }
+
+            VRSamplesUtil.addButton("Reset Pose", "R", null, function () { vrDisplay.resetPose(); });
+
+            if (vrDisplay.capabilities.canPresent)
+              vrPresentButton = VRSamplesUtil.addButton("Enter VR", "E", "media/icons/cardboard64.png", onVRRequestPresent);
+
+            window.addEventListener('vrdisplaypresentchange', onVRPresentChange, false);
+          } else {
+            initWebGL(false);
+            VRSamplesUtil.addInfo("WebVR supported, but no VRDisplays found.", 3000);
+          }
+        });
+      }
+
+                container.addEventListener('click', onRendererClick, false);
+                transformControl = new THREE.TransformControls( camera, renderer.domElement );
+                transformControl.container = container;
+                transformControl.addEventListener( 'change', render );
+                collisionControl._transformControl = transformControl;
+
+                //load a default printer
+                var loader = new THREE.JSONLoader();
+                loader.load("js/printer.js", function(geometry, materials) {
+                    if (!webglAvailable()) {
+                        for(var i in materials)
+                            materials[i].overdraw = 1;
+                    }
+                    var material = new THREE.MultiMaterial( materials );
+                    var object = new THREE.Mesh( geometry, material );
+                    object.castShadow = true;
+                    object.scale.set(12, 12, 12);
+                    object.position.setZ(10);
+                    object.position.setY(100);
+                    object.geometry.center();
+                    object.geometry.computeBoundingBox();
+                    scene.add(object);
+                    printer = object;
+                    //transformControl.nonCollidibleObjs.push(printer);
+                    collisionControl._nonCollidibleObjs.push(printer);
+                    printerControl.object = printer;
+                    printerControl._floorY = floorY; 
+                });
+
+		// Controls
+		controls = new THREE.OrbitControls( camera, renderer.domElement );
+		controls.damping = 0.2;
+		controls.addEventListener( 'change', render );
+
+		scene.add( transformControl );
+
+		// Hiding transform situation is a littloader_collada_skinning.htmlle in a mess :()
+		transformControl.addEventListener( 'change', function( e ) {
+                    cancelHideTransorm();
+		} );
+
+		transformControl.addEventListener( 'mouseDown', function( e ) {
+                    if (transformControl.object.position) {
+                        collisionControl._lastVector = collisionControl._lastVector?collisionControl._lastVector:new THREE.Vector3();
+                        collisionControl._lastVector.copy(transformControl.object.position.clone());
+                    }
+                    cancelHideTransorm();
+		} );
+
+                transformControl.addEventListener( 'mouseMove', function( e ) {
+                    if (selectedDescription) {
+                        try {
+                            _currentVector = transformControl.object.position.clone();
+                            var _distance = _currentVector.distanceTo(collisionControl._lastVector);
+                            if (_distance > 0 && !collisionControl.checkCollisionsForDescription4(selectedDescription, false, isOriginal, _currentVector))
+                                selectedDescription.updateLines();
+                            else
+                                selectedDescription.updateLines();
+                        
+                            if (transformControl.object) {
+                                collisionControl.checkFloorYForDescription(selectedDescription);//(transformControl.object);
+                            }
+                            
+                            //camera.position.copy(cameraLastPosition);
+                            //camera.rotation.copy(cameraLastRotation);
+                        } catch (e) {
+                            console.log(e);
+                        }
+                    } else {
+                        console.log('description not found in mouseMouse handler');
+                    }
+		} );
+
+		transformControl.addEventListener( 'mouseUp', function( e ) {
+                    if (transformControl.object.position) {
+                        collisionControl._lastVector = collisionControl._lastVector?collisionControl._lastVector:new THREE.Vector3();
+                        collisionControl._lastVector.copy(transformControl.object.position.clone());
+                    }
+                    delayHideTransform();
+		} );
+
+		transformControl.addEventListener( 'objectChange', function( e ) {
+                    if (!transformControl.object)
+                        return false;            
+                    console.log(typeof transformControl.object);
+                    controls.addEventListener( 'start', function() {
+                        cancelHideTransorm();
+                    } );
+
+                    controls.addEventListener( 'end', function() {
+                        delayHideTransform();
+                    } );
+                });
+                var hiding;
+
+                function delayHideTransform() {
+                    cancelHideTransorm();
+                    hideTransform();
+                }
+
+                function hideTransform() {
+                    hiding = setTimeout( function() {
+                        transformControl.detach( transformControl.object );
+                    }, 2500 );
+                }
+
+                function cancelHideTransorm() {
+                    if ( hiding ) clearTimeout( hiding );
+                }
+            }
+
+            function animate() {
+                requestAnimationFrame( animate );
+                controls.update();                    
+                var cameraPositionInfo = camera.position.clone();
+                var cameraRotationInfo = camera.rotation;
+                var cameraInfo = 'x: ' + cameraPositionInfo.x + ', y: ' + cameraPositionInfo.y + ', z: ' + cameraPositionInfo.z + '<br/>' +
+                        cameraRotationInfo;
+                $('#cameraInfo').html(cameraInfo);
+                render();
+                transformControl.update();
+                /*if (_currentVector) {
+                    var _distance = _currentVector.distanceTo(collisionControl._lastVector);
+                    if (_distance > 0 && !collisionControl.checkCollisionsForDescription2(selectedDescription, false, isOriginal))
+                        transformControl.update();
+                    else {
+                        if (isOriginal) {
+                            selectedDescription.updateLines();    
+                        } else {
+                            selectedDescription.updateLines();    
+                        }
+                    }
+                }*/
+            }
+
+            prevTime = Date.now();
+            function render() {
+                var delta = 0.75 * clock.getDelta();//(animationDirectionForward?0.75:-0.75) * clock.getDelta();
+
+                /*if( printerControl.animationAction && isAnimated ) {//animationAction && animationAction.enabled ) {//mixer && isAnimated ) {
+                    //mixer.update( animationDirectionForward?delta:-delta );
+                    //helper.update();
+                    //var testWeight = animationAction.getEffectiveWeight();
+                    printerControl.animationMixer.update(delta);
+                    var time = Date.now();
+
+                    //mixer.update( ( time - prevTime ) * (animationDirectionForward?0.001:-0.001) );
+                    if (animationDirectionForward) {
+                        if (printerControl.animationAction.time <= printerControl.animationDuration) {
+                            if (printerControl.animationAction) {
+                                printerControl.animationAction = printerControl.animationMixer.clipAction( printerControl.animationClip );   
+                                printerControl.animationAction.time += .001;
+                            }
+                        } else {
+                            printerControl.makeVisible();
+                            isAnimated = false;
+                        }
+                    } else if (!animationDirectionForward) {
+                        if (printerControl.animationAction.time >= 0) {
+                            if (printerControl.animationAction) {
+                                printerControl.animationAction = printerControl.animationMixer.clipAction( printerControl.animationClip );    
+                                printerControl.animationAction.time -= .001;
+                            }
+                        } else {
+                            printerControl.makeVisible();
+                            isAnimated = false;
+                        }
+                    }
+                  
+                    prevTime = time;
+                    $('#animationInfo').html('animation time: ' + printerControl.animationAction.time + '<br/>printer control is currently in state: ' + printerControl.currentAnimationState);
+                } else {
+                    if (animationDirectionForward && currentFrame < testObjects.length-1) {
+                        currentFrame++;
+                    } else if (!animationDirectionForward && currentFrame > 0) {
+                        currentFrame--;
+                    }
+                    for (var i in printerControl._objects) {
+                        if (i == currentFrame) {
+                            printerControl._objects[i].visible = true;
+                            printerControl.object = printerControl._objects[i];
+                        } else
+                            printerControl._objects[i].visible = false;
+                    }
+                }*/
+                $('#cameraInfo').html('camera position x: ' + camera.position.x + ', y: ' + camera.position.y + ', z: ' + camera.position.z +
+                        '<br/>camera rotation x: ' + camera.rotation.x + ', y: ' + camera.rotation.y + ', z: ' + camera.rotation.z);
+                if (!effect.isPresenting)
+                    renderer.render( scene, camera );
+                else {
+                    var vrInfo = '';
+                    // Loop over every gamepad and if we find any that have a pose use it.
+          var vrGamepads = [];
+
+          var gamepads = navigator.getGamepads();
+          for (var i = 0; i < gamepads.length; ++i) {
+            var gamepad = gamepads[i];
+            
+            // The array may contain undefined gamepads, so check for that as
+            // well as a non-null pose.
+            if (gamepad && gamepad.pose) {
+                if (gamepad.pose.position) {
+                    vrInfo += 'gamepad ' + i + ' position: ' + gamepad.pose.position.x + ', ' + gamepad.pose.position.y + ', ' + gamepad.pose.position.z + '<br/>';
+                }
+              vrGamepads.push(gamepad);
+
+              if ("vibrate" in gamepad) {
+                for (var j = 0; j < gamepad.buttons.length; ++j) {
+                  if (gamepad.buttons[j].pressed) {
+                    //gamepad.vibrate(1000);
+                    // Vibrate the gamepad relative to the amount the button is pressed.
+                    var vibrationDelay = (500 * (1.0 - gamepad.buttons[j].value)) + 100;
+
+                    if (t - lastVibration > vibrationDelay) {
+                      gamepad.vibrate(100);
+                      lastVibration = t;
+                    }
+
+                    break;
+                  }
+                }
+              }
+            }
+          }
+
+          var pose = vrDisplay.getPose();
+                if (pose) {
+                    vrInfo += 'display position: ' + pose.position.x + ', ' + pose.position.y + ', ' + pose.position.z + '<br/>';
+                } 
+                    $('#vrInfo').html(vrInfo);
+                    vrControls.update();
+                    effect.render(scene, camera);
+                }
+            }
+                        
+            function onRendererClick(event) {
+                event.preventDefault();
+                    
+                var mousePos = getMousePos(container, event);
+                x = ( (mousePos.x) / container.offsetWidth ) * 2 - 1 ;
+                y = - ( (mousePos.y) / container.offsetHeight) * 2 + 1 ;
+                var vector = new THREE.Vector3( x, y, 1 );
+                var projector = new THREE.Projector();
+                projector.unprojectVector( vector, camera );
+                var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+                var intersects = raycaster.intersectObjects( allObjects );
+                if ( intersects.length > 0 ) {
+                    controls.enable = false;
+                    cameraLastPosition = camera.position.clone();
+                    cameraLastRotation = camera.rotation.clone();
+                    selectedObject = intersects[ 0 ].object;
+                } else if (selectedObject && !controls.enable) {
+                    controls.enable = true;
+                    transformControl.detach( transformControl.object );//selectedObject );
+                    selectedObject = null;
+                    selectedDescription = null;
+                    return false;
+                }
+                    
+                //defaults to true for the origin point of the description line having been clicked on.
+                isOriginal = true;
+                
+                //set to true is sprite was clicked on, trigger edit sprite event
+                clickedOnSprite = false;
+                try {
+                    var ind = printerControl.descriptionSpritePivots.indexOf(selectedObject);
+                            
+                    if (ind >= 0) { //what was clicked on was of on the end of the description line with the sprite description
+                        selectedDescription = printerControl.descriptions[ind];
+                        isOriginal = false;
+                    } else {
+                        ind = printerControl.descriptionSprites.indexOf(selectedObject);
+                        
+                        if (ind >= 0) { //if the sprite itself was clicked on, open the edit description dialog where the move functionality is delegated via
+                            //the "move" button located there
+                            selectedDescription = printerControl.descriptions[ind];
+                            selectedObject = printerControl.descriptionSpritePivots[ind]; //save the pivot that goes with this description so when the move delegation
+                            //is invoked, the selected object is attached to the transformControl
+                            isOriginal = false;
+                            clickedOnSprite = true;
+                        } else {
+                            ind = printerControl.descriptionSpriteOriginPivots.indexOf(selectedObject);
+                            if (ind >= 0) {
+                                selectedDescription = printerControl.descriptions[ind];
+                            }
+                        }
+                    }
+                    
+                    //debugging selected description infomation
+                    /*if (selectedDescription) {
+                        var selectedInfo = 'pivot, x: ' + selectedDescription._pivot.position.x + ', y: ' + selectedDescription._pivot.position.y +
+                                ', z: ' + selectedDescription._pivot.position.z + '<br/>';
+                        selectedInfo += 'origin, x: ' + selectedDescription.origin.x + ', y: ' + selectedDescription.origin.y + ', z: ' +
+                                selectedDescription.origin.z + '<br/>';
+                        selectedInfo += 'origin2, x: ' + selectedDescription.origin2.x + ', y: ' + selectedDescription.origin2.y + ', z: ' +
+                                selectedDescription.origin2.z + '<br/>';
+                        selectedInfo += 'pivot2, x: ' + selectedDescription._pivot2.position.x + ', y: ' + selectedDescription._pivot2.position.y +
+                                ', z: ' + selectedDescription._pivot2.position.z + '<br/>';
+                        selectedInfo += 'target, x: ' + selectedDescription.target.x + ', y: ' + selectedDescription.target.y + ', z: ' +
+                                selectedDescription.target.z + '<br/>';
+                        selectedInfo += 'target2, x: ' + selectedDescription.target2.x + ', y: ' + selectedDescription.target2.y + ', z: ' +
+                                selectedDescription.target2.z + '<br/>';
+                        selectedInfo += 'sprite, x: ' + selectedDescription.sprite.x + ', y: ' + selectedDescription.sprite.y + ', z: ' +
+                                selectedDescription.sprite.z + '<br/>';
+                        selectedInfo += 'line 0, x: ' + selectedDescription.line.geometry.vertices[0].x + ', y: ' + selectedDescription.line.geometry.vertices[0].y + ', z: ' +
+                                selectedDescription.line.geometry.vertices[0].z + '<br/>';
+                        selectedInfo += 'line 1, x: ' + selectedDescription.line.geometry.vertices[1].x + ', y: ' + selectedDescription.line.geometry.vertices[1].y + ', z: ' +
+                                selectedDescription.line.geometry.vertices[1].z + '<br/>';
+                        $('#selectedInfo').html(selectedInfo);
+                    }*/
+                    
+                    if (selectedObject) {
+                        transformControl.attach(selectedObject);
+                    }
+                           
+                    if (clickedOnSprite) {
+                        var but = $('#' + printerControl.descriptionContainer + ' p:eq(' + ind + ') input');
+                        if (but.length > 0) {
+                            $(but[0]).trigger('click');
+                        }
+                        transformControl.detach( transformControl.object );
+                        //selectedObject = null;
+                        //selectedDescription = null;
+                        controls.enable = true; 
+                    } else if (selectedDescription) {
+                        /*if (!collisionControl.checkCollisionsForDescription(selectedDescription, false, isOriginal))
+                            selectedDescription.updateLines();
+                        else
+                            selectedDescription.updateLines2();*/
+                    } else {
+                        //console.log('description not found');
+                    }
+                } catch (e) {
+                    console.log(e);
+                        //if (selectedDescription && !clickedOnSprite)
+                            //selectedDescription.updateLines();
+                }
+            }
+
+                function getMousePos(canvas, evt) {
+                    var rect = canvas.getBoundingClientRect();
+                    return {
+                        x: evt.clientX - rect.left,
+                        y: evt.clientY - rect.top
+                    };
+                }
+                
+                // ================================
+      // WebVR-specific code begins here.
+      // ================================
+
+      function onVRRequestPresent () {
+        vrDisplay.requestPresent([{ source: webglCanvas }]).then(function () {
+        }, function () {
+          VRSamplesUtil.addError("requestPresent failed.", 2000);
+        });
+      }
+
+      function onVRExitPresent () {
+        vrDisplay.exitPresent().then(function () {
+        }, function () {
+          VRSamplesUtil.addError("exitPresent failed.", 2000);
+        });
+      }
+
+      function onVRPresentChange () {
+        onResize();
+
+        if (vrDisplay.isPresenting) {
+          if (vrDisplay.capabilities.hasExternalDisplay) {
+            VRSamplesUtil.removeButton(vrPresentButton);
+            vrPresentButton = VRSamplesUtil.addButton("Exit VR", "E", "media/icons/cardboard64.png", onVRExitPresent);
+          }
+        } else {
+          if (vrDisplay.capabilities.hasExternalDisplay) {
+            VRSamplesUtil.removeButton(vrPresentButton);
+            vrPresentButton = VRSamplesUtil.addButton("Enter VR", "E", "media/icons/cardboard64.png", onVRRequestPresent);
+          }
+        }
+      }
+            </script>
+	</head>
+	<body>
+            <div class="h"><p id="info"></p><br/><p id="info2"></p></div>
+            <div class="wrap_box edit">
+            <div class="left">
+                <div id="info_addr">
+                <address id="">
+                    <div style="left:13px;position:relative;top: 11px; transform-origin: 98px 0px 0px;" id="u13" class="text">
+                        <p><span>用户名：代用名001
+                                <br/>
+                                上次登陆时间:<br/>
+                        2016-04-04 15：06</span></p>
+                    </div>
+                </address>
+                </div>
+            <div id="info_lnks">
+                <ul>
+                    <li><div><span><a class="iconfont" href="#" target="_blank">主页</a></span></div></li>
+                    <li><div><span><a class="iconfont" href="#" target="_blank">产品管理</a></span></div></li>
+                    <li><div><span><a class="iconfont" href="#" target="_blank">样式管理</a></span></div></li>
+                    <li><div><span><a class="iconfont" href="#" target="_blank">分类管理</a></span></div></li>
+                </ul>
+            </div>
+            </div>
+            <div class="right">
+                <div class="h2 left" style="width:100%;">
+                    <div class="left" style="width:80%;">
+                        <h4><span style="font-size:32px;">商品编辑</span></h4>
+                    </div>
+                    <div class="right" style="width:20%;">
+                        <input type="button" value="3D模型"></input>
+                        <input type="button" value="图片模型"></input>
+                    </div>
+                </div>
+                <br/><div class="hr left" style="width:100%;"><hr/></div>
+                <div class="left" style="width:100%;">
+                <form enctype="multipart/form-data" method="post">
+                    <div class="left" style="width:50%;">
+                        <div style="margin-left:17px;width:100%;">
+                            <label for="商品名称">
+                                商品名称&nbsp;&nbsp;<input id="commodity-name" name="commodity-name" type="text">商品名称</input>
+                            </label>
+                        </div>
+                        <div style="margin-left:17px;width:100%;">
+                            <label for="建议售价">
+                                建议售价&nbsp;&nbsp;<input id="price" name="price" type="text">建议售价</input>
+                            </label>
+                        </div>
+                        <input type="submit" value="效果预览"></input>
+                    </div>
+                    </form>
+                    <div class="right" style="width:50%;">
+                        <div class="left">
+                            <img id="u50_img" class="img" src="images/产品编辑-模型/u50.png">
+                            <div style="top: 87px; transform-origin: 97px 12px 0px;" id="u51" class="text">
+                                <p><span>3D数据包</span></p>
+                            </div>
+                            <div id="progressbar"></div>
+                        </div>
+                        <div class="right" style="overflow: hidden;width: 50%;">
+                            3D数据包要求说明：
+                            <br/>
+                            1.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                            <br/>
+                            2.xxxxxxxxxxxxxxxxxxxxxx
+                            <br/>
+                            3.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                            <br/>
+                            4.xxxxxxxxxxxxxxxxx
+                        </div><br/>
+                        <div id="u52" class="ax_html_button right">
+                            <input id="u52_input" type="submit" value="清除">
+                        </div>
+                        <div id="u53" class="ax_html_button right">
+                            <input id="u53_input" class="prt-up" type="submit" value="上传">
+                        </div>
+                        <div id="ptr-up">
+                            <input id="printer" name="printer" type="file"></input>
+                        </div>
+                    </div>
+                </div>
+                <div id="container" class="left" style="width:100%;height:400px;background:#ffffa8;"></div><br/>
+                    <div style="cursor: pointer;" id="u0" class="ax_html_button right">
+                        <input type="submit" value="保存" class="save" id="u0_input" tabindex="0">
+                    </div>    
+                    <div style="cursor: pointer;" id="u30" class="ax_html_button right">
+                    <input type="submit" value="+" class="add-desc" id="u30_input" tabindex="0">
+                    </div>
+                    <div style="cursor: pointer;" id="change-printer" class="ax_html_button right">
+                        <input type="submit" value="change printer" class="change-printer" id="u30_input" tabindex="0">
+                    </div>
+                    <div id="desc" class="left" style="width:100%;"></div>
+                    <div class="clear"></div>
+                    <div id="ji"></div>
+                    <div id="descriptionsInfo"></div>
+                    <div id="message"></div><br/>
+            <div id="collisionInfo"></div><br/>
+            <div id="collisionInfo2"></div><br/>
+            <div id="vrInfo"></div><br/>
+            <div id="cameraInfo"></div><br/>
+            <div id="selectedInfo"></div>
+            <div id="animationInfo"></div>
+                </div>
+            </div>
+        <div id="add-desc" title="Add printer description">
+            <p class="validateTips">All form fields are required.</p>
+            <form>
+                <fieldset>
+                <label for="description">Description</label>
+                <input type="text" name="description" id="description" class="text ui-widget-content ui-corner-all">
+                </fieldset>
+            </form>
+        </div>
+        <div id="edit-desc" title="Edit printer description">
+            <p class="validateTips">All form fields are required.</p>
+            <form>
+                <fieldset>
+                <label for="description">Description</label>
+                <input type="text" name="description" id="desc" class="text ui-widget-content ui-corner-all">
+                <input type="hidden" name="desc-id" id="desc-id"/>
+                </fieldset>
+            </form>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="js/three.js"></script>
+        <script type="text/javascript" src="js/CanvasRenderer.js"></script>
+        <script type="text/javascript" src="js/Projector.js"></script>
+    </head>
+    <body>
+        <div>TODO write content</div>
+        <script>
+
+			var camera, scene, renderer;
+			var geometry, material, mesh;
+
+			function init() {
+
+				renderer = new THREE.CanvasRenderer();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 10 );
+				camera.position.z = 3;
+
+				scene = new THREE.Scene();
+
+				geometry = new THREE.CubeGeometry( 1, 1, 1 );
+				material = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, wireframeLinewidth: 2 } );
+
+				/*var lineGeometry = new THREE.Geometry();
+                lineGeometry.vertices.push(new THREE.Line(0, 0, 0), new THREE.Line(100, 100, 0));
+                var line = new THREE.Line( lineGeometry, new THREE.LineDashedMaterial( { color: 0x000000, dashSize: 3, gapSize: 1, linewidth: 1 } ) );
+				scene.add(line);*/
+				
+				mesh = new THREE.Mesh( geometry, material );
+				scene.add( mesh );
+
+				var v1 = new THREE.Vector3(0,0,0);
+				var d1 = new THREE.Vector3(1,1,1);
+				var v2 = v1.clone();//.sub(d1.normalize());
+				v1.normalize();
+				v1.projectOnVector(d1);
+				v1.setLength(100);
+				var geometry = new THREE.Geometry();
+				geometry.vertices.push(v1);
+				geometry.vertices.push(v2);
+				var pts = new THREE.Points(geometry, new THREE.PointsMaterial({color:0xff0000, size:10}));
+				//scene.add(pts);
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				mesh.rotation.x = Date.now() * 0.0005;
+				mesh.rotation.y = Date.now() * 0.001;
+
+				renderer.render( scene, camera );
+
+			}
+
+			init();
+			animate();
+
+		</script>
+    </body>
+</html>

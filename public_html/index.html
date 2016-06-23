@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <title>产品说明书-3</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="baidu-site-verification" content="fsZoTq9h0W" />
+        <link href="css/style.css" rel="stylesheet" type="text/css" />
+        <link href="font/iconfont.css" rel="stylesheet" type="text/css" />
+        <script type="text/javascript" src="js/jquery.min.js"></script>
+        <script type="text/javascript" src="js/three.js"></script>
+	<script type="text/javascript" src="js/CanvasRenderer.js"></script>
+        <script type="text/javascript" src="js/ExhibitionControls.js"></script>
+        <script type="text/javascript" src="js/OrbitControls.js"></script>
+        <script type="text/javascript" src="js/Projector.js"></script>
+        <script type="text/javascript" src="js/Tween.js"></script>
+        <script type="text/javascript">
+        var canvas, controls, line, textBox, printer, pivot, pivot2, clock = new THREE.Clock();
+        
+        THREE.SpriteAlignment = {};
+        THREE.SpriteAlignment.topLeft = new THREE.Vector2( 1, -1 );
+        THREE.SpriteAlignment.topCenter = new THREE.Vector2( 0, -1 );
+        THREE.SpriteAlignment.topRight = new THREE.Vector2( -1, -1 );
+        THREE.SpriteAlignment.centerLeft = new THREE.Vector2( 1, 0 );
+        THREE.SpriteAlignment.center = new THREE.Vector2( 0, 0 );
+        THREE.SpriteAlignment.centerRight = new THREE.Vector2( -1, 0 );
+        THREE.SpriteAlignment.bottomLeft = new THREE.Vector2( 1, 1 );
+        THREE.SpriteAlignment.bottomCenter = new THREE.Vector2( 0, 1 );
+        THREE.SpriteAlignment.bottomRight = new THREE.Vector2( -1, 1 );
+        function webglAvailable() { 
+            try { 
+                canvas = document.createElement( 'canvas' );
+                return !!( window.WebGLRenderingContext && ( canvas.getContext( 'webgl' ) || 
+                    canvas.getContext( 'experimental-webgl' ) ) );
+            } catch ( e ) { 
+                return false; 
+            } 
+        }
+        
+        function requestAnim( callback ){
+            if (window.requestAnimationFrame) {
+                window.requestAnimationFrame(callback);
+            } else if (window.mozRequestAnimationFrame) {
+                window.mozRequestAnimationFrame(callback);
+            } else if (window.webkitRequestAnimationFrame) {
+                window.webkitRequestAnimationFrame(callback);
+            } else if (window.msRequestAnimationFrame) {
+                window.msRequestAnimationFrame(callback);
+            } else if (window.oRequestAnimationFrame) {
+                window.oRequestAnimationFrame(callback);
+            } else {
+                window.setTimeout(callback, 20);
+            }
+        }
+        
+        function getMousePos(canvas, evt) {
+            var rect = canvas.getBoundingClientRect();
+            return {
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
+            };
+        }
+        
+        var container, fov = 45, decal, raycaster, dir = 0;
+        var allObjects = [], nonCollidibleObjs = [];
+        var intersection = {
+            intersects: false,
+            point: new THREE.Vector3(),
+            normal: new THREE.Vector3()
+	};
+	var mouse = new THREE.Vector2();
+        var decals = [];
+        var decalHelper, mouseHelper;
+        var selectedObject;
+        var mouse = new THREE.Vector2(), offset = new THREE.Vector3();
+	var camera, scene, renderer;
+
+	var plane, manager = new THREE.LoadingManager();
+        manager.onProgress = function ( item, loaded, total ) {
+            console.log( item, loaded, total );
+	};
+        var onProgress = function ( xhr ) {
+            if ( xhr.lengthComputable ) {
+                var percentComplete = xhr.loaded / xhr.total * 100;
+		console.log( Math.round(percentComplete, 2) + '% downloaded' );
+            }
+	};
+	var onError = function ( xhr ) {
+	};
+        var rotationAmount = .4;
+	var targetRotation = 0;
+	var targetRotationOnMouseDown = 0;
+        var upAndLeft = 1, up = 2, upAndRight = 3, left = 4, noMove = 5, right = 6, downAndLeft = 7, down = 8, downAndRight = 9;
+        var current = noMove;
+
+	var mouseX = 0, mouseY = 0;
+	var mouseXOnMouseDown = 0, mouseYOnMouseDown = 0;
+
+	var windowHalfX = 200;//window.innerWidth / 2;
+	var windowHalfY = 200;//window.innerHeight / 2;
+        var width = 400;
+        var height = 400;
+
+        $(document).ready(function() {
+            if ( webglAvailable() ) { 
+                renderer = new THREE.WebGLRenderer({antialias:true}); 
+            } else { 
+                renderer = new THREE.CanvasRenderer({antialias:true}); 
+            }   
+            renderer.gammaInput = true;
+            renderer.gammaOutput = true;
+            renderer.shadowMapEnabled = true;
+            renderer.shadowMapAutoUpdate = true;
+            renderer.shadowMapType = THREE.PCFShadowMap;
+
+            canvas.width = canvas.height = 400;    
+            init();
+            animate();
+            window.addEventListener( 'mousemove', onTouchMove );
+            
+            $('a.up').click(function(e) {
+                rotationTween = new TWEEN.Tween( printer.rotation ).to( { x: printer.rotation.x + Math.PI/2 }, 1000)
+				.interpolation(TWEEN.Interpolation.Linear)
+				.delay( 200 )
+				.easing(TWEEN.Easing.Quadratic.InOut)
+				.repeat(0)
+				.start();
+            });
+            
+            $('a.down').click(function(e) {
+                    rotationTween = new TWEEN.Tween( printer.rotation ).to( { x: printer.rotation.x - Math.PI/2 }, 1000)
+				.interpolation(TWEEN.Interpolation.Linear)
+				.delay( 200 )
+				.easing(TWEEN.Easing.Quadratic.InOut)
+				.repeat(0)
+				.start();
+            });
+            
+            $('a.left').click(function(e) {
+                    rotationTween = new TWEEN.Tween( printer.rotation ).to( { y: printer.rotation.y + Math.PI/2 }, 1000)
+				.interpolation(TWEEN.Interpolation.Linear)
+				.delay( 200 )
+				.easing(TWEEN.Easing.Quadratic.InOut)
+				.repeat(0)
+				.start();
+            });
+            
+            $('a.right').click(function(e) {
+                rotationTween = new TWEEN.Tween( printer.rotation ).to( { y: printer.rotation.y - Math.PI/2 }, 1000)
+				.interpolation(TWEEN.Interpolation.Linear)
+				.delay( 200 )
+				.easing(TWEEN.Easing.Quadratic.InOut)
+				.repeat(0)
+				.start();
+            });
+            
+            window.addEventListener('mouseup', onMouseUp, false);
+            
+            function onMouseUp(e) {
+                dir = 0;
+            }
+        });
+
+	function init() {
+            container = document.getElementById('info_pro_imgbar');
+            width = container.offsetWidth;
+            height = container.offsetHeight;
+            windowHalfX = width/2;
+            windowHalfY = height/2;
+            camera = new THREE.PerspectiveCamera( 70, 1, 1, 15000 );//window.innerWidth / window.innerHeight, 1, 1000 );
+            camera.position.y = 150;
+            camera.position.z = 500;
+            
+            addEventListener('click', onRendererClick, false);
+            
+            /* 场景 */
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog( 0x1e4877, 1, 15000 );
+            scene.add( new THREE.AmbientLight( 0x222222 ) );
+            var d = 200;
+            var directionalLight = new THREE.DirectionalLight( 0xFFFFFF, 3 );
+            directionalLight.position.set( 10, 120, -10 ).multiplyScalar(2);
+            directionalLight.castShadow = true;
+            directionalLight.shadowMapWidth = width;
+            directionalLight.shadowMapHeight = height;
+            directionalLight.shadowCameraLeft = -d * 2;
+            directionalLight.shadowCameraRight = d * 2;
+            directionalLight.shadowCameraTop = d * 1.4;
+            directionalLight.shadowCameraBottom = -d;
+            directionalLight.shadowCameraFar = 10000;
+            scene.add( directionalLight );
+            var light = new THREE.PointLight( 0xffffff );
+            light.castShadow = true;
+            light.shadowCameraNear = 120;
+            light.shadowCameraFar = 1000;
+            light.shadowCameraFov = 1000;
+            light.position.copy( camera.position );
+            scene.add( light );
+            var geometry = new THREE.PlaneBufferGeometry( width, height );
+            geometry.rotateX( - Math.PI / 2 );
+
+            var material = new THREE.MeshPhongMaterial( { color: 0xffdd99 } );//new THREE.MeshBasicMaterial( { color: 0xe0e0e0, overdraw: 0.5 } );//new THREE.MeshLambertMaterial( { color: 0xffffff, shading: THREE.FlatShading, vertexColors: THREE.VertexColors } )//new THREE.MeshBasicMaterial( { color: 0xe0e0e0, overdraw: 0.5 } );
+                                
+            plane = new THREE.Mesh( geometry, material );
+            plane.castShadow = false;			
+            plane.receiveShadow = true;
+            plane.position.setY(-80);
+            scene.add( plane );
+            
+            if (renderer) {
+                $('#info_pro_imgbar img').hide();
+            }
+            
+            renderer.setSize(width, height);
+            renderer.setClearColor( 0xa4a4a4 );
+            renderer.sortObjects = false;
+            
+            raycaster = new THREE.Raycaster();
+
+            document.getElementById('info_pro_imgbar').appendChild( renderer.domElement );
+            $('#info_pro_imgbar canvas').attr('id', 'c');
+                                
+            /* 控制器 */
+            controls = new THREE.OrbitControls( camera, container );
+            /*controls = new THREE.ExhibitionControls( camera, container );
+            controls.zoomSpeed = 3000;
+            controls.moveSpeed = Math.PI;
+            controls.target.set( 0, 200, 0 );
+            controls.origin.set(0, 200, 0);
+            controls.minRadius = 10;
+            controls.maxRadius = 10000;
+            controls.minLatitude = 0;
+            controls.maxLatitude = Math.PI / 2;
+            controls.autoMove = false;*/
+            //controls.setPosition(1500,200,0);
+            
+            var loader = new THREE.JSONLoader();
+            loader.load("a048.js", function(geometry, materials) {
+            	var material = new THREE.MultiMaterial( materials );
+                var object = new THREE.Mesh( geometry, material );
+                //object.traverse( function( node ) { node.castShadow = true;node.receiveShadow = true; } );
+                object.castShadow = true;
+                //object.receiveShadow = true;
+        	object.scale.set(6, 6, 6);
+                object.position.setZ(10);
+                object.position.setY(100);
+                scene.add(object);
+                printer = object;
+                //var box2 = new THREE.BoxHelper(object);
+                //printer.add(box2);
+                //printer.geometry.computeBoundingBox();
+                //var d = getDimension(printer);
+                var spritey = makeTextSprite( "三方付款", {scale: 0.2});
+            nonCollidibleObjs.push(spritey);
+            printer.add(spritey);
+            spritey.position.set(20,20,30);
+            var geometry = new THREE.Geometry();
+            geometry.vertices.push( new THREE.Vector3(0, 0, 0));//200, 100));//d.height*printer.scale.y, 0 ) );
+            geometry.vertices.push( new THREE.Vector3( 20, 20, 30 ) );
+            var line = new THREE.Line( geometry, new THREE.LineBasicMaterial( { color: 0x000000, opacity: 0.2 } ) );
+            printer.add( line );
+            });
+            
+            
+        }
+
+        function onWindowResize() {
+            var doc = document.getElementById('info_pro_imgbar');
+            windowHalfX = doc.offsetHeight/2;//doc.innerWidth / 2;
+            windowHalfY = doc.offsetHeight/2;//doc.innerHeight / 2;
+
+            camera.aspect = windowHalfX/windowHalfY;//doc.innerWidth / doc.innerHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize( doc.offsetWidth, doc.offsetHeight );
+	}
+
+        function getDimension(obj) {
+            return { width: Math.abs(obj.geometry.boundingBox.max.x - obj.geometry.boundingBox.min.x),
+                height: Math.abs(obj.geometry.boundingBox.max.y - obj.geometry.boundingBox.min.y),
+                depth: Math.abs(obj.geometry.boundingBox.max.z - obj.geometry.boundingBox.min.z)
+                };
+        }
+
+	function animate() {
+            requestAnim( animate );
+            render();
+	}
+
+	function render() {
+            controls.update(clock.getDelta());
+            renderer.render( scene, camera );
+            TWEEN.update();
+	}
+        
+        function makeTextSprite(message, params) {
+    var fontsize = 16;
+    var scale = params.scale;
+    var canvas = document.createElement('canvas');
+    canvas.height = fontsize + 12;
+
+    var context = canvas.getContext('2d');
+
+    context.font = fontsize + "px 宋体";
+    var metrics = context.measureText( message );
+    var textWidth = metrics.width;
+    canvas.width =  textWidth +12;
+    context.font = fontsize + "px 宋体";
+
+    context.fillStyle = "#3f4046";
+    context.strokeStyle = "#3f4046";
+    context.lineWidth = 2;
+    roundRect(context, 1, 1, textWidth + 10, fontsize + 10, 6);
+
+//    context.fillStyle = "#41addd";
+//    context.strokeStyle = "#41addd";
+//    context.lineWidth = 2;
+//    roundRect(context, 1, fontsize + 15, textWidth + 10, fontsize + 10, 6);
+
+
+    context.fillStyle = "#ffffff";
+    context.fillText( message, 5, fontsize  + 5);
+//    context.fillText( message, 5, fontsize * 2  + 20);
+
+    var texture = new THREE.Texture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.needsUpdate = true;
+    var spriteMaterial = new THREE.SpriteMaterial( { map: texture, useScreenCoordinates: true } );
+    var sprite = new THREE.Sprite( spriteMaterial );
+
+    sprite.scale.set(scale * (textWidth +12), scale * (fontsize + 12),1.0);
+    return sprite;
+
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h);
+    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r);
+    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+    ctx.fill();
+	ctx.stroke();
+}
+
+function checkIntersection() {
+				if ( ! textBox ) return;
+
+				raycaster.setFromCamera( mouse, camera );
+
+				var intersects = raycaster.intersectObjects( [ line, textBox ] );
+
+				if ( intersects.length > 0 ) {
+                                    /*var obj = intersects[0].object;
+                                    obj.traverse(function(node){if (node instanceof THREE.Sprite || node.type == 'Sprite') {
+                                            node.material.color.setHex(0xffff00);
+                                    }});*/
+                                    textBox.material.color.setHex(0xffff00);
+                                     
+
+				} else {
+
+					textBox.material.color.setHex(0xffffff);
+
+				}
+
+			}
+                        
+                        			function onTouchMove( event ) {
+
+				if ( event.changedTouches ) {
+
+					x = event.changedTouches[ 0 ].pageX;
+					y = event.changedTouches[ 0 ].pageY;
+
+				} else {
+
+					x = event.clientX;
+					y = event.clientY;
+
+				}
+
+								mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+				mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+
+				checkIntersection();
+
+			}
+                        
+                        function updatePivotInfo(x, y) {
+                            if (pivotLastX && pivotLastY)
+                            $('#pivotInfo').html(pivotLastX - x + ', ' + pivotLastY - y);
+                        }
+function onRendererClick(event) {
+                event.preventDefault();
+                    
+                var mousePos = getMousePos(container, event);
+                x = ( (mousePos.x) / container.offsetWidth ) * 2 - 1 ;
+                y = - ( (mousePos.y) / container.offsetHeight) * 2 + 1 ;
+                var vector = new THREE.Vector3( x, y, 1 );
+                var projector = new THREE.Projector();
+                projector.unprojectVector( vector, camera );
+                var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+                var intersects = raycaster.intersectObjects( nonCollidibleObjs );
+                if ( intersects.length > 0 ) {
+                    $('.info_ivdeo').html('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent auctor lacinia ligula, eu interdum felis tincidunt sit amet. Quisque faucibus leo condimentum nulla porttitor, sit amet aliquam enim euismod. Curabitur et gravida quam, a fringilla urna. Donec ut tortor tristique, lacinia urna ut, sodales felis. Quisque vestibulum nibh ut nunc convallis dictum. Interdum et malesuada fames ac ante ipsum primis in faucibus. Integer fermentum ultrices luctus. Aenean nec felis dignissim, congue leo quis, dignissim magna. Nullam ut magna non tellus malesuada gravida ut sit amet erat. Praesent dapibus sagittis tellus. Sed ultricies dignissim egestas. Praesent scelerisque feugiat tortor, id pulvinar lorem malesuada sed. Nam orci ex, suscipit sagittis ipsum ut, iaculis molestie velit. Aenean fermentum molestie consequat. Aenean id hendrerit mauris. Nulla ut lobortis nunc, non pellentesque mauris.');
+                }
+                }
+
+                function getMousePos(canvas, evt) {
+                    var rect = canvas.getBoundingClientRect();
+                    return {
+                        x: evt.clientX - rect.left,
+                        y: evt.clientY - rect.top
+                    };
+                }
+    </script>
+    </head>
+    <body>
+        <div class="wrap_box">
+	<div class="return_iconbar left">
+    	<a class="iconfont" href="#" target="_blank">&#xe606;</a>
+        <a class="iconfont" href="#" target="_blank">&#xe601;</a>
+        <a class="iconfont up" href="#" target="_blank">&#xe602;</a>
+        <a class="iconfont down" href="#" target="_blank">&#xe603;</a>
+        <a class="iconfont left" href="#" target="_blank">&#xe600;</a>
+        <a class="iconfont right" href="#" target="_blank">&#xe604;</a>
+    </div>
+	<div class="info_bar right">
+        <div class="info_pro_mxbar">
+            <div class="info_pro_wordsbar">
+                <a style="position:absolute;" href="#" target="_blank">三方付款</a>
+            </div>
+            <div id="info_pro_imgbar" class="info_pro_imgbar">
+                <p id="info"></p>
+                <p id="info2"></p>
+                <p id="info3"></p>
+                <p id="info4"></p>
+                <p id="pivotInfo"></p>
+                <img src="images/pro_img.png" alt=""/>
+            </div>
+        </div>
+    </div>
+    <div class="info_shubar">
+        <div class="info_videobar">
+            <p id="info"></p>
+        	<div class="info_ivdeo"></div>
+        </div>
+        <div class="info_fontbar">
+<!--            <div class="info_titlebar">
+                <h4>产品特色</h4>
+            </div>-->
+            <div class="info_font">
+                <p>
+                复印机属模拟方式，只能如实进行文献的复印。今后OfficeMate办公伙伴的复印机将向数字式复印机方向发展，使图像的存储、传输以及编辑排版（图像合成、信息追加或删减、局部放大或缩小、改错）等成为可能。它可以通过接口与计算机、文字处理机和其他微处理机相连，成为地区网络的重要组成部分。多功能化、彩色化、廉价和小型化、高速仍然是重要的发展方向。
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="clear"></div>
+</div>
+    </body>
+</html>
