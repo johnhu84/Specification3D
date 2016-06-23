@@ -38,9 +38,32 @@
     <script src="js/Animation.js"></script>
     <script src="js/AnimationHandler.js"></script>
     <script src="js/KeyFrameAnimation.js"></script>
+    <script>
+      var WebVRConfig = {
+        // Prevents the polyfill from initializing automatically.
+        DEFER_INITIALIZATION: true,
+        // Polyfill optimizations
+        DIRTY_SUBMIT_FRAME_BINDINGS: true,
+        BUFFER_SCALE: 0.75,
+      };
+    </script>
+    <script src="js/third-party/webvr-polyfill.js"></script>
+    <script src="js/third-party/wglu/wglu-url.js"></script>
+    <script>
+      // Dynamically turn the polyfill on if requested by the query args.
+      if (WGLUUrl.getBool('polyfill', false)) { InitializeWebVRPolyfill(); }
+    </script>
+    <!-- End sample polyfill enabling logic -->
+
+    <script src="js/third-party/gl-matrix-min.js"></script>
+
+    <script src="js/third-party/wglu/wglu-debug-geometry.js"></script>
+    <script src="js/third-party/wglu/wglu-program.js"></script>
+    <script src="js/third-party/wglu/wglu-stats.js"></script>
+    <script src="js/third-party/wglu/wglu-texture.js"></script>
     <script src="js/WebVR.js"></script>
-    <script src="js/effects/VREffect.js"></script>
-    <script src="js/controls/VRControls.js"></script>
+    <script src="js/VREffect.js"></script>
+    <script src="js/VRControls.js"></script>
     <script type="text/javascript" src="js/JSON-js-master/json2.js"></script>
     <script>
         if ( WEBVR.isLatestAvailable() === false ) {
@@ -58,7 +81,7 @@
         }	
 
 	var container, printerControl, collisionControl, prevTime, isAnimated = false, animationDirectionForward;
-	var camera, scene, renderer, webgl, _currentVector, vrControls, effect;
+	var camera, scene, renderer, webgl, _currentVector, vrControls, effect, vrDisplay;
 	//array of objects that can be selected by the TransformControl
         var allObjects = []
         var nonCollidibleObjs = [];
