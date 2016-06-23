@@ -312,7 +312,7 @@ if (navigator.getVRDisplays) {
           if (displays.length > 0) {
             vrDisplay = displays[0];
 
-            initWebGL(true);
+            //initWebGL(true);
 
             if (vrDisplay.stageParameters &&
                 vrDisplay.stageParameters.sizeX > 0 &&
@@ -327,7 +327,7 @@ if (navigator.getVRDisplays) {
 
             window.addEventListener('vrdisplaypresentchange', onVRPresentChange, false);
           } else {
-            initWebGL(false);
+            //initWebGL(false);
             VRSamplesUtil.addInfo("WebVR supported, but no VRDisplays found.", 3000);
           }
         });
@@ -560,7 +560,7 @@ if (navigator.getVRDisplays) {
 
           var pose = vrDisplay.getPose();
                 if (pose) {
-                    vrInfo += 'display position: ' + pose.position.x + ', ' + pose.position.y + ', ' + pose.position.z + '<br/>';
+                    vrInfo += 'display position: ' + pose.x + ', ' + pose.y + ', ' + pose.z + '<br/>';
                 } 
                     $('#vrInfo').html(vrInfo);
                     vrControls.update();
