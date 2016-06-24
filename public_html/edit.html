@@ -260,14 +260,15 @@
             camera.position.z = 1000;
             scene.add( camera );
             vrControls = new THREE.VRControls(camera);
+            vrControls.standing = true;
             // controllers
 
                 controller1 = new THREE.ViveController( 0 );
-                controller1.standingMatrix = controls.getStandingMatrix();
+                controller1.standingMatrix = vrControls.getStandingMatrix();
                 scene.add( controller1 );
 
                 controller2 = new THREE.ViveController( 1 );
-                controller2.standingMatrix = controls.getStandingMatrix();
+                controller2.standingMatrix = vrControls.getStandingMatrix();
                 scene.add( controller2 );
 
                 var vivePath = 'objs/vive-controller/';
