@@ -351,9 +351,9 @@ if (navigator.getVRDisplays) {
                     var material = new THREE.MultiMaterial( materials );
                     var object = new THREE.Mesh( geometry, material );
                     object.castShadow = true;
-                    object.scale.set(12, 12, 12);
-                    object.position.setZ(10);
-                    object.position.setY(100);
+                    //object.scale.set(12, 12, 12);
+                    //object.position.setZ(10);
+                    //object.position.setY(100);
                     object.geometry.center();
                     object.geometry.computeBoundingBox();
                     scene.add(object);
@@ -522,7 +522,8 @@ if (navigator.getVRDisplays) {
                 }*/
                 $('#cameraInfo').html('camera position x: ' + camera.position.x + ', y: ' + camera.position.y + ', z: ' + camera.position.z +
                         '<br/>camera rotation x: ' + camera.rotation.x + ', y: ' + camera.rotation.y + ', z: ' + camera.rotation.z);
-                if (!effect.isPresenting)
+                //if (!effect.isPresenting || (vrDisplay && !vrDisplay.isPresenting))
+                if (vrDisplay && !vrDisplay.isPresenting)
                     renderer.render( scene, camera );
                 else {
                     var vrInfo = '';
