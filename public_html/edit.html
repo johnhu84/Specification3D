@@ -579,6 +579,9 @@ if (navigator.getVRDisplays) {
                 if (gamepad.pose.position) {
                     vrInfo += 'gamepad ' + i + ' position: ' + gamepad.pose.position[0] + ', ' + gamepad.pose.position[1] + ', ' + gamepad.pose.position[2] + '<br/>';
                 }
+                if (gamepad.pose.orientation) {
+                    vrInfo += 'gamepad ' + i + ' position: ' + gamepad.pose.orientation[0] + ', ' + gamepad.pose.orientation[1] + ', ' + gamepad.pose.orientation[2] + ', ' + gamepad.pose.orientation[3] + '<br/>';
+                }
               vrGamepads.push(gamepad);
 
               if ("vibrate" in gamepad) {
@@ -604,6 +607,9 @@ if (navigator.getVRDisplays) {
           var pose = vrDisplay.getPose();
                 if (pose && pose.position) {
                     vrInfo += 'display position: ' + pose.position[0] + ', ' + pose.position[1] + ', ' + pose.position[2] + '<br/>';
+                }
+                if (pose && pose.orientation) {
+                    vrInfo += 'display position: ' + pose.orientation[0] + ', ' + pose.orientation[1] + ', ' + pose.orientation[2] + ', ' + pose.orientation[3] + '<br/>';   
                 } 
                     $('#vrInfo').html(vrInfo);
                     vrControls.update();
