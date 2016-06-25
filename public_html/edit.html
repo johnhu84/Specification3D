@@ -243,6 +243,16 @@
             dialog.dialog('close');
         }
         
+        function addDescription2() {
+            var description = 'something';//$('#description').val();
+            var newDescriptionControl = printerControl.addDescription(description);
+            allObjects.push(newDescriptionControl._pivot);
+            allObjects.push(newDescriptionControl._pivot2);
+            allObjects.push(newDescriptionControl.sprite);
+            //$('#add-desc form input#description').val('');
+            //dialog.dialog('close');
+        }
+
         function editDescription(event) {
             event.preventDefault();
             var description = $('input#desc').val();
@@ -578,10 +588,11 @@ if (navigator.getVRDisplays) {
                     // Vibrate the gamepad relative to the amount the button is pressed.
                     var vibrationDelay = (500 * (1.0 - gamepad.buttons[j].value)) + 100;
 
-                    if (t - lastVibration > vibrationDelay) {
+                    /*if (t - lastVibration > vibrationDelay) {
                       gamepad.vibrate(100);
                       lastVibration = t;
-                    }
+                    }*/
+                    addDescription2();
 
                     break;
                   }
