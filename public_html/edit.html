@@ -567,7 +567,7 @@ if (navigator.getVRDisplays) {
             // well as a non-null pose.
             if (gamepad && gamepad.pose) {
                 if (gamepad.pose.position) {
-                    vrInfo += 'gamepad ' + i + ' position: ' + gamepad.pose.position.0 + ', ' + gamepad.pose.position.1 + ', ' + gamepad.pose.position.2 + '<br/>';
+                    vrInfo += 'gamepad ' + i + ' position: ' + gamepad.pose.position[0] + ', ' + gamepad.pose.position[1] + ', ' + gamepad.pose.position[2] + '<br/>';
                 }
               vrGamepads.push(gamepad);
 
@@ -592,7 +592,7 @@ if (navigator.getVRDisplays) {
 
           var pose = vrDisplay.getPose();
                 if (pose && pose.position) {
-                    vrInfo += 'display position: ' + pose.position.0 + ', ' + pose.position.1 + ', ' + pose.position.2 + '<br/>';
+                    vrInfo += 'display position: ' + pose.position[0] + ', ' + pose.position[1] + ', ' + pose.position[2] + '<br/>';
                 } 
                     $('#vrInfo').html(vrInfo);
                     vrControls.update();
