@@ -71,7 +71,7 @@
     <script type="text/javascript" src="js/JSON-js-master/json2.js"></script>
     <script>
         if ( WEBVR.isLatestAvailable() === false ) {
-            document.body.appendChild( WEBVR.getMessage() );
+            //document.body.appendChild( WEBVR.getMessage() );
 	}
         
 	function webglAvailable() { 
@@ -604,6 +604,7 @@ if (navigator.getVRDisplays) {
             }
           }
 
+          if (vrDisplay) {
           var pose = vrDisplay.getPose();
                 if (pose && pose.position) {
                     vrInfo += 'display position: ' + pose.position[0] + ', ' + pose.position[1] + ', ' + pose.position[2] + '<br/>';
@@ -616,6 +617,7 @@ if (navigator.getVRDisplays) {
                     effect.render(scene, camera);
                 }
             }
+        }
                         
             function onRendererClick(event) {
                 event.preventDefault();
