@@ -85,6 +85,7 @@
         }	
 
 	var container, printerControl, collisionControl, prevTime, isAnimated = false, animationDirectionForward;
+    var gamepads;
 	var camera, scene, renderer, webgl, _currentVector, vrControls, effect, vrDisplay, controller1, controller2;
 	//array of objects that can be selected by the TransformControl
         var allObjects = []
@@ -255,7 +256,7 @@
 
 	function init() {
             container = document.getElementById('container');
-                                
+
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, .1, 10 );
             //camera.position.z = 100;
@@ -336,6 +337,7 @@
         	document.body.appendChild( WEBVR.getButton( effect ) );
             }
 
+gamepads = navigator.getGamepads();
 if (navigator.getVRDisplays) {
         navigator.getVRDisplays().then(function (displays) {
           if (displays.length > 0) {
@@ -558,7 +560,6 @@ if (navigator.getVRDisplays) {
                     // Loop over every gamepad and if we find any that have a pose use it.
           var vrGamepads = [];
 
-          var gamepads = navigator.getGamepads();
           for (var i = 0; i < gamepads.length; ++i) {
             var gamepad = gamepads[i];
             
@@ -566,7 +567,7 @@ if (navigator.getVRDisplays) {
             // well as a non-null pose.
             if (gamepad && gamepad.pose) {
                 if (gamepad.pose.position) {
-                    vrInfo += 'gamepad ' + i + ' position: ' + gamepad.pose.position.x + ', ' + gamepad.pose.position.y + ', ' + gamepad.pose.position.z + '<br/>';
+                    vrInfo += 'gamepad ' + i + ' position: ' + gamepad.pose.position.0 + ', ' + gamepad.pose.position.1 + ', ' + gamepad.pose.position.2 + '<br/>';
                 }
               vrGamepads.push(gamepad);
 
@@ -591,7 +592,7 @@ if (navigator.getVRDisplays) {
 
           var pose = vrDisplay.getPose();
                 if (pose && pose.position) {
-                    vrInfo += 'display position: ' + pose.position.x + ', ' + pose.position.y + ', ' + pose.position.z + '<br/>';
+                    vrInfo += 'display position: ' + pose.position.0 + ', ' + pose.position.1 + ', ' + pose.position.2 + '<br/>';
                 } 
                     $('#vrInfo').html(vrInfo);
                     vrControls.update();
