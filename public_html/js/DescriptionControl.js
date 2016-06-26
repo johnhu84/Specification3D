@@ -39,7 +39,8 @@
         this.sprite = (parameters.sprite !== undefined) ? parameters.sprite : null;
         this.selectedObject;
         this.jsonStrs = [];
-        
+        this.isVr = (parameters.isVr !== undefined) ? parameters.isVr : null;
+
         this.canvas;
         this.context;
         this._transformControl = (parameters.transformControl !== void 0) ? parameters.transformControl : null;

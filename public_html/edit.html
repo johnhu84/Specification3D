@@ -71,10 +71,10 @@
     <script type="text/javascript" src="js/JSON-js-master/json2.js"></script>
     <script>
         if ( WEBVR.isLatestAvailable() === false ) {
-            //document.body.appendChild( WEBVR.getMessage() );
-	}
+            document.body.appendChild( WEBVR.getMessage() );
+    }
         
-	function webglAvailable() { 
+    function webglAvailable() { 
             try { 
                 canvas = document.createElement( 'canvas' );
                 return !!( window.WebGLRenderingContext && ( canvas.getContext( 'webgl' ) || 
@@ -82,18 +82,18 @@
             } catch ( e ) { 
                 return false; 
             } 
-        }	
+        }   
 
-	var container, printerControl, collisionControl, prevTime, isAnimated = false, animationDirectionForward;
+    var container, printerControl, collisionControl, prevTime, isAnimated = false, animationDirectionForward;
     var gamepads;
-	var camera, scene, renderer, webgl, _currentVector, vrControls, effect, vrDisplay, controller1, controller2;
-	//array of objects that can be selected by the TransformControl
+    var camera, scene, renderer, webgl, _currentVector, vrControls, effect, vrDisplay, controller1, controller2, testObj;
+    //array of objects that can be selected by the TransformControl
         var allObjects = []
         var nonCollidibleObjs = [];
         var mesh;
-	var mixer;
+    var mixer;
         var clock = new THREE.Clock();
-	var geometry = new THREE.BoxGeometry( 20, 20, 20 );
+    var geometry = new THREE.BoxGeometry( 20, 20, 20 );
         var selectedObject, selectedDescription; 
         
         //05/28/16
@@ -249,6 +249,7 @@
             allObjects.push(newDescriptionControl._pivot);
             allObjects.push(newDescriptionControl._pivot2);
             allObjects.push(newDescriptionControl.sprite);
+            return newDescriptionControl;
             //$('#add-desc form input#description').val('');
             //dialog.dialog('close');
         }
@@ -264,11 +265,11 @@
             editDialog.dialog('close');
         }
 
-	function init() {
+    function init() {
             container = document.getElementById('container');
 
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, .1, 10 );
+            camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 10, 10000 );
             //camera.position.z = 100;
             scene.add( camera );
             vrControls = new THREE.VRControls(camera);
@@ -344,7 +345,7 @@
             printerControl = new THREE.PrinterControl(null, renderer.domElement, {scene: scene, camera: camera, webgl: webgl, collisionControl: collisionControl});
             effect = new THREE.VREffect(renderer);
             if ( WEBVR.isAvailable() === true ) {
-        	document.body.appendChild( WEBVR.getButton( effect ) );
+            document.body.appendChild( WEBVR.getButton( effect ) );
             }
 
 gamepads = navigator.getGamepads();
@@ -390,7 +391,7 @@ if (navigator.getVRDisplays) {
                     var material = new THREE.MultiMaterial( materials );
                     var object = new THREE.Mesh( geometry, material );
                     object.castShadow = true;
-                    object.scale.set(.04, .04, .04);
+                    object.scale.set(4, 4, 4);
                     object.position.set(0, .02, -.02);
                     //object.position.setZ(10);
                     //object.position.setY(100);
@@ -404,25 +405,25 @@ if (navigator.getVRDisplays) {
                     printerControl._floorY = floorY; 
                 });
 
-		// Controls
-		controls = new THREE.OrbitControls( camera, renderer.domElement );
-		controls.damping = 0.2;
-		controls.addEventListener( 'change', render );
+        // Controls
+        controls = new THREE.OrbitControls( camera, renderer.domElement );
+        controls.damping = 0.2;
+        controls.addEventListener( 'change', render );
 
-		scene.add( transformControl );
+        scene.add( transformControl );
 
-		// Hiding transform situation is a littloader_collada_skinning.htmlle in a mess :()
-		transformControl.addEventListener( 'change', function( e ) {
+        // Hiding transform situation is a littloader_collada_skinning.htmlle in a mess :()
+        transformControl.addEventListener( 'change', function( e ) {
                     cancelHideTransorm();
-		} );
+        } );
 
-		transformControl.addEventListener( 'mouseDown', function( e ) {
+        transformControl.addEventListener( 'mouseDown', function( e ) {
                     if (transformControl.object.position) {
                         collisionControl._lastVector = collisionControl._lastVector?collisionControl._lastVector:new THREE.Vector3();
                         collisionControl._lastVector.copy(transformControl.object.position.clone());
                     }
                     cancelHideTransorm();
-		} );
+        } );
 
                 transformControl.addEventListener( 'mouseMove', function( e ) {
                     if (selectedDescription) {
@@ -446,17 +447,17 @@ if (navigator.getVRDisplays) {
                     } else {
                         console.log('description not found in mouseMouse handler');
                     }
-		} );
+        } );
 
-		transformControl.addEventListener( 'mouseUp', function( e ) {
+        transformControl.addEventListener( 'mouseUp', function( e ) {
                     if (transformControl.object.position) {
                         collisionControl._lastVector = collisionControl._lastVector?collisionControl._lastVector:new THREE.Vector3();
                         collisionControl._lastVector.copy(transformControl.object.position.clone());
                     }
                     delayHideTransform();
-		} );
+        } );
 
-		transformControl.addEventListener( 'objectChange', function( e ) {
+        transformControl.addEventListener( 'objectChange', function( e ) {
                     if (!transformControl.object)
                         return false;            
                     console.log(typeof transformControl.object);
@@ -566,6 +567,52 @@ if (navigator.getVRDisplays) {
                 if (vrDisplay && !vrDisplay.isPresenting)
                     renderer.render( scene, camera );
                 else {
+                    if( printerControl.animationAction && isAnimated ) {//animationAction && animationAction.enabled ) {//mixer && isAnimated ) {
+                    //mixer.update( animationDirectionForward?delta:-delta );
+                    //helper.update();
+                    //var testWeight = animationAction.getEffectiveWeight();
+                    printerControl.animationMixer.update(delta);
+                    var time = Date.now();
+
+                    //mixer.update( ( time - prevTime ) * (animationDirectionForward?0.001:-0.001) );
+                    if (animationDirectionForward) {
+                        if (printerControl.animationAction.time <= printerControl.animationDuration) {
+                            if (printerControl.animationAction) {
+                                printerControl.animationAction = printerControl.animationMixer.clipAction( printerControl.animationClip );   
+                                printerControl.animationAction.time += .001;
+                            }
+                        } else {
+                            printerControl.makeVisible();
+                            isAnimated = false;
+                        }
+                    } else if (!animationDirectionForward) {
+                        if (printerControl.animationAction.time >= 0) {
+                            if (printerControl.animationAction) {
+                                printerControl.animationAction = printerControl.animationMixer.clipAction( printerControl.animationClip );    
+                                printerControl.animationAction.time -= .001;
+                            }
+                        } else {
+                            printerControl.makeVisible();
+                            isAnimated = false;
+                        }
+                    }
+                  
+                    prevTime = time;
+                    $('#animationInfo').html('animation time: ' + printerControl.animationAction.time + '<br/>printer control is currently in state: ' + printerControl.currentAnimationState);
+                } else {
+                    if (animationDirectionForward && currentFrame < testObjects.length-1) {
+                        currentFrame++;
+                    } else if (!animationDirectionForward && currentFrame > 0) {
+                        currentFrame--;
+                    }
+                    for (var i in printerControl._objects) {
+                        if (i == currentFrame) {
+                            printerControl._objects[i].visible = true;
+                            printerControl.object = printerControl._objects[i];
+                        } else
+                            printerControl._objects[i].visible = false;
+                    }
+                }
                     var vrInfo = '';
                     // Loop over every gamepad and if we find any that have a pose use it.
           var vrGamepads = [];
@@ -590,12 +637,18 @@ if (navigator.getVRDisplays) {
                     //gamepad.vibrate(1000);
                     // Vibrate the gamepad relative to the amount the button is pressed.
                     var vibrationDelay = (500 * (1.0 - gamepad.buttons[j].value)) + 100;
-
+                    if (printerControl.object) {
+                        printerControl.object.position.set(gamepad.pose.position[0], gamepad.pose.position[1], gamepad.pose.position[2]);
+                    }
+                    if (testObj) {
+                        testObj.sprite.position.set(gamepad.pose.position[0], gamepad.pose.position[1], gamepad.pose.position[2]);
+                        testObj.pivot2.position.set(gamepad.pose.position[0], gamepad.pose.position[1], gamepad.pose.position[2]);
+                    }
                     /*if (t - lastVibration > vibrationDelay) {
                       gamepad.vibrate(100);
                       lastVibration = t;
                     }*/
-                    addDescription2();
+                    testObj = addDescription2();
 
                     break;
                   }
@@ -765,8 +818,8 @@ if (navigator.getVRDisplays) {
         }
       }
             </script>
-	</head>
-	<body>
+    </head>
+    <body>
             <div class="h"><p id="info"></p><br/><p id="info2"></p></div>
             <div class="wrap_box edit">
             <div class="left">
