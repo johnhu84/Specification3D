@@ -229,6 +229,28 @@
             //dialog.dialog('close');
         }
 
+        function addDescription3() {
+            var description = 'something2';//$('#description').val();
+            var newDescriptionControl = printerControl.addDescription(description);
+            allObjects.push(newDescriptionControl._pivot);
+            allObjects.push(newDescriptionControl._pivot2);
+            allObjects.push(newDescriptionControl.sprite);
+            return newDescriptionControl;
+            //$('#add-desc form input#description').val('');
+            //dialog.dialog('close');
+        }
+
+        function addDescription4() {
+            var description = 'something2';//$('#description').val();
+            var newDescriptionControl = printerControl.addDescription(description);
+            allObjects.push(newDescriptionControl._pivot);
+            allObjects.push(newDescriptionControl._pivot2);
+            allObjects.push(newDescriptionControl.sprite);
+            return newDescriptionControl;
+            //$('#add-desc form input#description').val('');
+            //dialog.dialog('close');
+        }
+
         function editDescription(event) {
             event.preventDefault();
             var description = $('input#desc').val();
@@ -242,7 +264,6 @@
 
     function init() {
             container = document.getElementById('container');
-
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 10, 10000 );
             //camera.position.z = 100;
@@ -330,7 +351,7 @@ if (navigator.getVRDisplays) {
             if (vrDisplay.stageParameters &&
                 vrDisplay.stageParameters.sizeX > 0 &&
                 vrDisplay.stageParameters.sizeZ > 0) {
-              cubeIsland.resize(vrDisplay.stageParameters.sizeX, vrDisplay.stageParameters.sizeZ);
+              //cubeIsland.resize(vrDisplay.stageParameters.sizeX, vrDisplay.stageParameters.sizeZ);
             }
 
             VRSamplesUtil.addButton("Reset Pose", "R", null, function () { vrDisplay.resetPose(); });
@@ -362,8 +383,8 @@ if (navigator.getVRDisplays) {
                     var material = new THREE.MultiMaterial( materials );
                     var object = new THREE.Mesh( geometry, material );
                     object.castShadow = true;
-                    object.scale.set(4, 4, 4);
-                    object.position.set(0, .02, -.02);
+                    //object.scale.set(4, 4, 4);
+                    //object.position.set(0, .02, -.02);
                     //object.position.setZ(10);
                     //object.position.setY(100);
                     object.geometry.center();
@@ -375,7 +396,7 @@ if (navigator.getVRDisplays) {
                     printerControl.object = printer;
                     printerControl._floorY = floorY; 
                 });
-
+testObj = addDescription2();
         // Controls
         controls = new THREE.OrbitControls( camera, renderer.domElement );
         controls.damping = 0.2;
@@ -486,52 +507,6 @@ if (navigator.getVRDisplays) {
             function render() {
                 var delta = 0.75 * clock.getDelta();//(animationDirectionForward?0.75:-0.75) * clock.getDelta();
 
-                /*if( printerControl.animationAction && isAnimated ) {//animationAction && animationAction.enabled ) {//mixer && isAnimated ) {
-                    //mixer.update( animationDirectionForward?delta:-delta );
-                    //helper.update();
-                    //var testWeight = animationAction.getEffectiveWeight();
-                    printerControl.animationMixer.update(delta);
-                    var time = Date.now();
-
-                    //mixer.update( ( time - prevTime ) * (animationDirectionForward?0.001:-0.001) );
-                    if (animationDirectionForward) {
-                        if (printerControl.animationAction.time <= printerControl.animationDuration) {
-                            if (printerControl.animationAction) {
-                                printerControl.animationAction = printerControl.animationMixer.clipAction( printerControl.animationClip );   
-                                printerControl.animationAction.time += .001;
-                            }
-                        } else {
-                            printerControl.makeVisible();
-                            isAnimated = false;
-                        }
-                    } else if (!animationDirectionForward) {
-                        if (printerControl.animationAction.time >= 0) {
-                            if (printerControl.animationAction) {
-                                printerControl.animationAction = printerControl.animationMixer.clipAction( printerControl.animationClip );    
-                                printerControl.animationAction.time -= .001;
-                            }
-                        } else {
-                            printerControl.makeVisible();
-                            isAnimated = false;
-                        }
-                    }
-                  
-                    prevTime = time;
-                    $('#animationInfo').html('animation time: ' + printerControl.animationAction.time + '<br/>printer control is currently in state: ' + printerControl.currentAnimationState);
-                } else {
-                    if (animationDirectionForward && currentFrame < testObjects.length-1) {
-                        currentFrame++;
-                    } else if (!animationDirectionForward && currentFrame > 0) {
-                        currentFrame--;
-                    }
-                    for (var i in printerControl._objects) {
-                        if (i == currentFrame) {
-                            printerControl._objects[i].visible = true;
-                            printerControl.object = printerControl._objects[i];
-                        } else
-                            printerControl._objects[i].visible = false;
-                    }
-                }*/
                 $('#cameraInfo').html('camera position x: ' + camera.position.x + ', y: ' + camera.position.y + ', z: ' + camera.position.z +
                         '<br/>camera rotation x: ' + camera.rotation.x + ', y: ' + camera.rotation.y + ', z: ' + camera.rotation.z);
                 //if (!effect.isPresenting || (vrDisplay && !vrDisplay.isPresenting))
@@ -621,7 +596,6 @@ if (navigator.getVRDisplays) {
                       gamepad.vibrate(100);
                       lastVibration = t;
                     }*/
-                    testObj = addDescription2();
 }
                     break;
                   }
