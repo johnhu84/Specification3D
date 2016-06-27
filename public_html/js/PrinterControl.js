@@ -310,14 +310,14 @@
 
                     mesh.name = filename;
                     var data;
-                    mesh.scale.set(4, 4, 4);
+                    //mesh.scale.set(4, 4, 4);
                     scene.add( mesh );
                     mesh.geometry.computeBoundingBox();
                     //var boundingBox = new THREE.BoundingBoxHelper(mesh);// mesh.geometry.boundingBox;
                     //scene.add(boundingBox);
                     //mesh.geometry.center();
                     var height = (Math.abs(mesh.geometry.boundingBox.max.y - mesh.geometry.boundingBox.min.y));// * mesh.scale.y);
-                    mesh.position.setY(self._floorY);// + height);
+                    //mesh.position.setY(self._floorY);// + height);
                     self.object = mesh;
                     self.collisionControl._nonCollidibleObjs.push(mesh);
                     self._objects.push(mesh);

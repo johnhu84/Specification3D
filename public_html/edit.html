@@ -39,35 +39,10 @@
     <script src="js/Animation.js"></script>
     <script src="js/AnimationHandler.js"></script>
     <script src="js/KeyFrameAnimation.js"></script>
-    <script>
-      var WebVRConfig = {
-        // Prevents the polyfill from initializing automatically.
-        DEFER_INITIALIZATION: true,
-        // Polyfill optimizations
-        DIRTY_SUBMIT_FRAME_BINDINGS: true,
-        BUFFER_SCALE: 0.75,
-      };
-    </script>
-    <script src="js/third-party/webvr-polyfill.js"></script>
-    <script src="js/third-party/wglu/wglu-url.js"></script>
-    <script>
-      // Dynamically turn the polyfill on if requested by the query args.
-      if (WGLUUrl.getBool('polyfill', false)) { InitializeWebVRPolyfill(); }
-    </script>
-    <!-- End sample polyfill enabling logic -->
-
-    <script src="js/third-party/gl-matrix-min.js"></script>
-
-    <script src="js/third-party/wglu/wglu-debug-geometry.js"></script>
-    <script src="js/third-party/wglu/wglu-program.js"></script>
-    <script src="js/third-party/wglu/wglu-stats.js"></script>
-    <script src="js/third-party/wglu/wglu-texture.js"></script>
     <script src="js/WebVR.js"></script>
     <script src="js/VREffect.js"></script>
     <script src="js/VRControls.js"></script>
     <script src="js/ViveController.js"></script>
-    <script src="js/vr-cube-island.js"></script>
-    <script src="js/vr-samples-util.js"></script>
     <script type="text/javascript" src="js/JSON-js-master/json2.js"></script>
     <script>
         if ( WEBVR.isLatestAvailable() === false ) {
@@ -86,7 +61,7 @@
 
     var container, printerControl, collisionControl, prevTime, isAnimated = false, animationDirectionForward;
     var gamepads;
-    var camera, scene, renderer, webgl, _currentVector, vrControls, effect, vrDisplay, controller1, controller2, testObj;
+    var camera, scene, renderer, webgl, _currentVector, vrControls, effect, vrDisplay, controller1, controller2, testObj, eyeLeft, eyeRight;
     //array of objects that can be selected by the TransformControl
         var allObjects = []
         var nonCollidibleObjs = [];
@@ -320,15 +295,11 @@
             scene.add( light );
             spotlight = light;
 
-            var helper = new THREE.GridHelper( 10, 1 );
-            helper.position.y = floorY;
+            var helper = new THREE.GridHelper( 100, 1 );
+            //helper.position.y = floorY;
             helper.material.opacity = 0.25;
             helper.material.transparent = true;
             scene.add( helper );
-
-            var axis = new THREE.AxisHelper();
-            axis.position.set( -5, -5, -5 );
-            scene.add( axis );
 
             //renderer = new THREE.WebGLRenderer( { antialias: true } );
             webgl = webglAvailable();
@@ -641,15 +612,17 @@ if (navigator.getVRDisplays) {
                         printerControl.object.position.set(gamepad.pose.position[0], gamepad.pose.position[1], gamepad.pose.position[2]);
                     }
                     if (testObj) {
-                        testObj.sprite.position.set(gamepad.pose.position[0], gamepad.pose.position[1], gamepad.pose.position[2]);
-                        testObj.pivot2.position.set(gamepad.pose.position[0], gamepad.pose.position[1], gamepad.pose.position[2]);
-                    }
+                        var pxPerMetersX = (eyeLeft.renderWidth + eyeRight.renderWidth)/vrDisplay.stageParameters.sizeX;
+                        var pxPerMetersZ = (eyeLeft.renderHeight + eyeRight.renderHeight)/vrDisplay.stageParameters.sizeZ;
+                        testObj.sprite.position.set(pxPerMetersX*gamepad.pose.position[0], gamepad.pose.position[1], pxPerMetersZ*gamepad.pose.position[2]);
+                        testObj.pivot2.position.set(pxPerMetersX*gamepad.pose.position[0], gamepad.pose.position[1], pxPerMetersZ*gamepad.pose.position[2]);
+                    } else {
                     /*if (t - lastVibration > vibrationDelay) {
                       gamepad.vibrate(100);
                       lastVibration = t;
                     }*/
                     testObj = addDescription2();
-
+}
                     break;
                   }
                 }
@@ -658,7 +631,12 @@ if (navigator.getVRDisplays) {
           }
 
           if (vrDisplay) {
+            if (!eyeLeft)
+                eyeLeft = vrDisplay.getEyeParameters('left');
+            if (!eyeRight)
+                eyeRight = vrDisplay.getEyeParameters('right');
           var pose = vrDisplay.getPose();
+          var pose2 = vrDisplay.getImmediatePose();
                 if (pose && pose.position) {
                     vrInfo += 'display position: ' + pose.position[0] + ', ' + pose.position[1] + ', ' + pose.position[2] + '<br/>';
                 }
