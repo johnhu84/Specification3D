@@ -329,6 +329,7 @@
                     //cutting animation duration by half because js animations seem to move to destination then back to initial position
                     self.animationDuration = (self.animationClip.duration/2);// - (self.animationClip.duration/4);// + self.animationClip.duration/5;//self.animationAction._clip.duration;
                     self.animationAction = self.animationMixer.clipAction(self.animationClip).setDuration(self.animationDuration).play();
+                    printerControl.animationDuration = printerControl.animationClip.duration*(printerControl.animationClip.tracks.length-1)/printerControl.animationClip.tracks.length - 0.005;
                     self.animationAction.paused = true;
                     self.isAnimationEnabled = true;
                 } else {
