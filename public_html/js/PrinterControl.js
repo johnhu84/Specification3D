@@ -310,7 +310,8 @@
 
                     mesh.name = filename;
                     var data;
-                    //mesh.scale.set(4, 4, 4);
+                    mesh.scale.set(.1, .1, .1);
+                    mesh.position.set(0, -.8, -5);
                     scene.add( mesh );
                     mesh.geometry.computeBoundingBox();
                     //var boundingBox = new THREE.BoundingBoxHelper(mesh);// mesh.geometry.boundingBox;
@@ -327,7 +328,7 @@
                     //else
                         //self.animationClip = geometry.animations[0];
                     //cutting animation duration by half because js animations seem to move to destination then back to initial position
-                    self.animationDuration = (self.animationClip.duration/2);// - (self.animationClip.duration/4);// + self.animationClip.duration/5;//self.animationAction._clip.duration;
+                    self.animationDuration = (self.animationClip.duration/3);// - (self.animationClip.duration/4);// + self.animationClip.duration/5;//self.animationAction._clip.duration;
                     self.animationAction = self.animationMixer.clipAction(self.animationClip).setDuration(self.animationDuration).play();
                     self.animationAction.paused = true;
                     self.isAnimationEnabled = true;
