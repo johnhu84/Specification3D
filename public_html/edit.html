@@ -209,6 +209,17 @@
             //printerControl.testLoad();
         });
 
+    function makeCube (x, y, z) {
+  var cube = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshLambertMaterial({
+      color: 'red'
+    })
+  );
+  cube.position.set(x, y, z);
+  return cube;
+}
+
         function addDescription(event) {
             event.preventDefault();
             var description = $('#description').val();
@@ -272,7 +283,7 @@
             scene.add( camera );
             vrControls = new THREE.VRControls(camera);
             vrControls.standing = true;
-            vrButton = makeTextSprite({message:"keep cursor on here for 2 seconds to change 3D object", scale:.05});
+            vrButton = makeTextSprite({message:"keep cursor on here for 2 seconds to change 3D object", scale:.008});
             
                             crosshair = new THREE.Mesh(
                     new THREE.RingGeometry( 0.02, 0.04, 32 ),
@@ -286,6 +297,8 @@
                 camera.add( crosshair );
             vrButton.position.set(0, 1, -4);
             scene.add(vrButton);
+            var vrCube = makeCube(0, 0, 0);
+            scene.add(vrCube);
             // controllers
 
                 controller1 = new THREE.ViveController( 0 );
@@ -387,7 +400,7 @@
                 collisionControl._transformControl = transformControl;
 
                 //load a default printer
-                var loader = new THREE.JSONLoader();
+                /*var loader = new THREE.JSONLoader();
                 loader.load("js/printer.js", function(geometry, materials) {
                     if (!webglAvailable()) {
                         for(var i in materials)
@@ -408,7 +421,7 @@
                     collisionControl._nonCollidibleObjs.push(printer);
                     printerControl.object = printer;
                     printerControl._floorY = floorY; 
-                });
+                });*/
 //testObj = addDescription2();
         // Controls
         controls = new THREE.OrbitControls( camera, renderer.domElement );
@@ -638,12 +651,14 @@
 
                     if ( INTERSECTED != intersects[ 0 ].object ) {
 
-                        if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+                        //if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 
                         INTERSECTED = intersects[ 0 ].object;
                         //INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
                         //INTERSECTED.material.emissive.setHex( 0xff0000 );
                         vrButtonTimer++;
+                        console.log(vrButtonTimer);
+                        $('#vrInfo').html(vrButtonTimer);
                         if (vrButtonTimer == 2000) {
                                             if (!printerControl.isAnimationEnabled) {
                     animationDirectionForward = !animationDirectionForward ? true : !animationDirectionForward;
@@ -663,7 +678,7 @@
 
                 } else {
                     vrButtonTImer = 0;
-                    if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+                    //if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 
                     INTERSECTED = undefined;
 
@@ -672,8 +687,8 @@
                     effect.render(scene, camera);
         }
                         
-        function makeTextSprite(params) {
-            var fontsize = 32;//params.hasOwnProperty("fontsize") ? 
+        function makeTextSprite(params) {           
+var fontsize = 32;//params.hasOwnProperty("fontsize") ? 
                 //params["fontsize"] : 16;
             
             var scale = params.hasOwnProperty("scale") ? 
@@ -729,6 +744,7 @@
 
             return sprite;
         };
+
 
                 function getMousePos(canvas, evt) {
                     var rect = canvas.getBoundingClientRect();
