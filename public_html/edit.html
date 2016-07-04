@@ -61,7 +61,7 @@
 
     var container, printerControl, collisionControl, prevTime, isAnimated = false, animationDirectionForward;
     var gamepads;
-    var camera, scene, renderer, webgl, _currentVector, vrControls, effect, vrDisplay, controller1, controller2, testObj, eyeLeft, eyeRight, vrButton, vrButtonTimer = 0, crosshair;
+    var camera, scene, renderer, webgl, _currentVector, vrControls, effect, vrDisplay, controller1, controller2, testObj, eyeLeft, eyeRight, vrButton, vrButtonTimer = 0, crosshair, vrCube;
     var raycaster = new THREE.Raycaster();
     //array of objects that can be selected by the TransformControl
         var allObjects = []
@@ -283,7 +283,7 @@
             scene.add( camera );
             vrControls = new THREE.VRControls(camera);
             vrControls.standing = true;
-            vrButton = makeTextSprite({message:"keep cursor on here for 2 seconds to change 3D object", scale:.008});
+            vrButton = makeTextSprite({message:"keep cursor on spinning cube for 2 seconds to change 3D object", scale:.008});
             
                             crosshair = new THREE.Mesh(
                     new THREE.RingGeometry( 0.02, 0.04, 32 ),
@@ -297,7 +297,8 @@
                 camera.add( crosshair );
             vrButton.position.set(0, 1, -4);
             scene.add(vrButton);
-            var vrCube = makeCube(0, 0, 0);
+            vrCube = makeCube(0, 0, 0);
+            vrCube.position.set(0, 1.5, -4);
             scene.add(vrCube);
             // controllers
 
@@ -513,6 +514,7 @@
                 var cameraInfo = 'x: ' + cameraPositionInfo.x + ', y: ' + cameraPositionInfo.y + ', z: ' + cameraPositionInfo.z + '<br/>' +
                         cameraRotationInfo;
                 $('#cameraInfo').html(cameraInfo);
+                vrCube.rotateY(.04);
                 render();
                 transformControl.update();
                 /*if (_currentVector) {
@@ -645,21 +647,23 @@
                 }
                 raycaster.setFromCamera( { x: 0, y: 0 }, camera );
 
-                var intersects = raycaster.intersectObject( vrButton );
+                var intersects = raycaster.intersectObjects( [vrButton, vrCube] );
 
                 if ( intersects.length > 0 ) {
 
-                    if ( INTERSECTED != intersects[ 0 ].object ) {
+                    //if ( INTERSECTED != intersects[ 0 ].object ) {
 
                         //if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 
                         INTERSECTED = intersects[ 0 ].object;
-                        //INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-                        //INTERSECTED.material.emissive.setHex( 0xff0000 );
+                        if (INTERSECTED.material && INTERSECTED.material.emissive) {
+                            INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+                            INTERSECTED.material.emissive.setHex( 0xff0000 );
+                        }
                         vrButtonTimer++;
                         console.log(vrButtonTimer);
                         $('#vrInfo').html(vrButtonTimer);
-                        if (vrButtonTimer == 2000) {
+                        if (vrButtonTimer == 200) {
                                             if (!printerControl.isAnimationEnabled) {
                     animationDirectionForward = !animationDirectionForward ? true : !animationDirectionForward;
                     /*if (animationDirectionForward)
@@ -668,6 +672,7 @@
                         printerControl.playForwards();//Backwards();*/
                     return false;
                 }
+                if (!isAnimated) {
                 animationDirectionForward = !animationDirectionForward ? true : !animationDirectionForward;
                 isAnimated = true;
                 printerControl.currentAnimationState = printerControl.currentAnimationState % 2 == 0 ? 1 : 0;
@@ -678,7 +683,7 @@
 
                 } else {
                     vrButtonTImer = 0;
-                    //if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+                    if ( INTERSECTED && INTERSECTED.material && INTERSECTED.material.emissive ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 
                     INTERSECTED = undefined;
 
