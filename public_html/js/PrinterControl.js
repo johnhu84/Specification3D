@@ -310,8 +310,8 @@
 
                     mesh.name = filename;
                     var data;
-                    mesh.scale.set(.1, .1, .1);
-                    mesh.position.set(0, -.8, -5);
+                    mesh.scale.set(.05, .05, .05);
+                    mesh.position.set(0, .8, -5);
                     scene.add( mesh );
                     mesh.geometry.computeBoundingBox();
                     //var boundingBox = new THREE.BoundingBoxHelper(mesh);// mesh.geometry.boundingBox;

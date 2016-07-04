@@ -295,10 +295,11 @@
                 );
                 crosshair.position.z = - 2;
                 camera.add( crosshair );
-            vrButton.position.set(0, 1, -4);
+            vrButton.position.set(0, 2, -4);
             scene.add(vrButton);
             vrCube = makeCube(0, 0, 0);
-            vrCube.position.set(0, 1.5, -4);
+            vrCube.scale.set(.35, .35, .35);
+            vrCube.position.set(0, 2.5, -4);
             scene.add(vrCube);
             // controllers
 
@@ -658,12 +659,12 @@
                         INTERSECTED = intersects[ 0 ].object;
                         if (INTERSECTED.material && INTERSECTED.material.emissive) {
                             INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-                            INTERSECTED.material.emissive.setHex( 0xff0000 );
+                            INTERSECTED.material.emissive.setHex( 0xffff00 );
                         }
                         vrButtonTimer++;
                         console.log(vrButtonTimer);
                         $('#vrInfo').html(vrButtonTimer);
-                        if (vrButtonTimer == 200) {
+                        if (vrButtonTimer >= 400) {
                                             if (!printerControl.isAnimationEnabled) {
                     animationDirectionForward = !animationDirectionForward ? true : !animationDirectionForward;
                     /*if (animationDirectionForward)
@@ -673,12 +674,13 @@
                     return false;
                 }
                 if (!isAnimated) {
-                animationDirectionForward = !animationDirectionForward ? true : !animationDirectionForward;
-                isAnimated = true;
-                printerControl.currentAnimationState = printerControl.currentAnimationState % 2 == 0 ? 1 : 0;
-                printerControl.makeInvisible();
-                            vrButtonTimer = 0;
-                        }
+                    animationDirectionForward = !animationDirectionForward ? true : !animationDirectionForward;
+                    isAnimated = true;
+                    printerControl.currentAnimationState = printerControl.currentAnimationState % 2 == 0 ? 1 : 0;
+                    printerControl.makeInvisible();
+                            
+                    }
+                    vrButtonTimer = 0;
                     }
 
                 } else {
